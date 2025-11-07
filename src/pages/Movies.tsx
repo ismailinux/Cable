@@ -54,7 +54,7 @@ const Movies = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-7">
+      <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl md:text-5xl font-bold text-gradient mb-2">
             All Movies
