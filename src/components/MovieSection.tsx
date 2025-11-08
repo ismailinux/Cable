@@ -1,8 +1,8 @@
 import { Movie } from "@/services/tmdb";
 import { MovieCard } from "./MovieCard";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 
 interface MovieSectionProps {
   title: string;
@@ -13,8 +13,16 @@ interface MovieSectionProps {
   isLoadingMore?: boolean;
 }
 
-export const MovieSection = ({ title, movies, loading, onLoadMore, hasMore, isLoadingMore }: MovieSectionProps) => {
+export const MovieSection = ({
+  title,
+  movies,
+  loading,
+  onLoadMore,
+  hasMore,
+  isLoadingMore,
+}: MovieSectionProps) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
 
   const scroll = (direction: "left" | "right") => {
     if (!scrollContainerRef.current) return;
@@ -40,7 +48,8 @@ export const MovieSection = ({ title, movies, loading, onLoadMore, hasMore, isLo
           container.scrollLeft + container.clientWidth >=
           container.scrollWidth - pageScrollAmount;
 
-        if (isNearEnd) {
+        if (isNearEnd && !isFetchingMore) {
+          setIsFetchingMore(true);
           onLoadMore();
         }
       }
@@ -48,6 +57,14 @@ export const MovieSection = ({ title, movies, loading, onLoadMore, hasMore, isLo
       container.scrollBy({ left: -pageScrollAmount, behavior: "smooth" });
     }
   };
+
+  // Reset spinner when parent signals loading is complete
+  useEffect(() => {
+    if (!isLoadingMore && isFetchingMore) {
+      const timer = setTimeout(() => setIsFetchingMore(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoadingMore, isFetchingMore]);
 
   if (loading) {
     return (
@@ -72,7 +89,6 @@ export const MovieSection = ({ title, movies, loading, onLoadMore, hasMore, isLo
     <section className="mb-12 relative group">
       <h2 className="text-2xl font-bold mb-6">{title}</h2>
 
-      {/* Scroll buttons */}
       {/* Left Button */}
       <Button
         variant="ghost"
@@ -87,7 +103,7 @@ export const MovieSection = ({ title, movies, loading, onLoadMore, hasMore, isLo
         <ChevronLeft className="w-6 h-6" />
       </Button>
 
-      {/* Right Button */}
+      {/* Right Button - Shows Spinner During Load More */}
       <Button
         variant="ghost"
         size="icon"
@@ -97,8 +113,13 @@ export const MovieSection = ({ title, movies, loading, onLoadMore, hasMore, isLo
              transition-opacity 
              bg-background/80 backdrop-blur-sm hover:bg-background active:scale-95"
         onClick={() => scroll("right")}
+        disabled={isFetchingMore}
       >
-        <ChevronRight className="w-6 h-6" />
+        {isFetchingMore ? (
+          <Loader2 className="w-6 h-6 animate-spin" />
+        ) : (
+          <ChevronRight className="w-6 h-6" />
+        )}
       </Button>
 
       <div

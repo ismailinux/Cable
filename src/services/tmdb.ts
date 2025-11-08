@@ -52,7 +52,7 @@ export interface Cast {
 
 export interface MovieCredits {
   cast: Cast[];
-  crew: any[];
+  crew: any[]; // You can type this better if needed
 }
 
 export interface MoviesResponse {
@@ -62,10 +62,28 @@ export interface MoviesResponse {
   total_results: number;
 }
 
-const fetchFromTMDB = async (
+export interface Video {
+  iso_639_1: string;
+  iso_3166_1: string;
+  name: string;
+  key: string;
+  site: string;
+  size: number;
+  type: string;
+  official: boolean;
+  published_at: string;
+  id: string;
+}
+
+export interface VideosResponse {
+  id: number;
+  results: Video[];
+}
+
+const fetchFromTMDB = async <T>(
   endpoint: string,
   params: Record<string, string> = {}
-) => {
+): Promise<T> => {
   const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
   url.searchParams.append('api_key', TMDB_API_KEY);
 
@@ -144,10 +162,38 @@ export const tmdbService = {
     });
   },
 
+  // Get YouTube trailer key for a movie
+  getTrailerKey: async (movieId: number): Promise<string | null> => {
+    try {
+      const data: VideosResponse = await fetchFromTMDB(`/movie/${movieId}/videos`);
+
+      const youtubeVideos = data.results.filter((v) => v.site === 'YouTube');
+
+      // 1. Official Trailer or Teaser
+      const officialTrailer = youtubeVideos.find(
+        (v) => v.official && (v.type === 'Trailer' || v.type === 'Teaser')
+      );
+      if (officialTrailer) return officialTrailer.key;
+
+      // 2. Any Trailer or Teaser
+      const anyTrailer = youtubeVideos.find((v) => v.type === 'Trailer' || v.type === 'Teaser');
+      if (anyTrailer) return anyTrailer.key;
+
+      // 3. Any YouTube video
+      const anyVideo = youtubeVideos[0];
+      if (anyVideo) return anyVideo.key;
+
+      return null;
+    } catch (error) {
+      console.warn(`[TMDB] Failed to fetch trailer for movie ${movieId}:`, error);
+      return null;
+    }
+  },
+
   // Image URL helpers
   getImageUrl: (
     path: string | null,
-    size: 'w500' | 'w780' | 'original' = 'w500'
+    size: 'w300' | 'w500' | 'w780' | 'w1280' | 'original' = 'w500'
   ): string => {
     if (!path) return '/placeholder.jpg';
     return `${TMDB_IMAGE_BASE_URL}/${size}${path}`;

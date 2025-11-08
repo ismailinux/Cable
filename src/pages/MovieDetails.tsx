@@ -3,8 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { tmdbService, MovieDetails as MovieDetailsType } from "@/services/tmdb";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Star, Clock, Calendar } from "lucide-react";
+import { ArrowLeft, Star, Clock, Calendar, Play } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TrailerModal } from "@/components/TrailerModal";
+import { useState } from "react";
+
 
 const MovieDetails = () => {
   const { id } = useParams();
@@ -21,6 +24,9 @@ const MovieDetails = () => {
     queryFn: () => tmdbService.getMovieCredits(movieId),
     enabled: !!movieId,
   });
+
+    const [trailerOpen, setTrailerOpen] = useState(false);
+  
 
   if (movieLoading) {
     return (
@@ -133,9 +139,18 @@ const MovieDetails = () => {
             </div>
 
             {/* Overview */}
-            <div>
-              <h2 className="text-2xl font-bold mb-3">Overview</h2>
+            <div className="flex flex-col gap-3">
+              <h2 className="text-2xl font-bold">Overview</h2>
               <p className="text-foreground/90 leading-relaxed">{movie.overview}</p>
+                <Button
+                size="sm"
+                variant="outline"
+                className="border-foreground/20 hover:bg-foreground/10 text-xs sm:text-sm w-fit"
+                onClick={() => setTrailerOpen(true)}
+              >
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+                Trailer
+              </Button>
             </div>
 
             {/* Cast */}
@@ -166,6 +181,16 @@ const MovieDetails = () => {
       </div>
 
       <div className="h-24" />
+
+      {/* Reusable Trailer Modal */}
+      {movie && (
+        <TrailerModal
+          movieId={movie.id}
+          movieTitle={movie.title}
+          open={trailerOpen}
+          onOpenChange={setTrailerOpen}
+        />
+      )}
     </div>
   );
 };
