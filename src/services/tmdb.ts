@@ -1,5 +1,12 @@
-// TMDB API Service
-const TMDB_API_KEY = 'bd57ab9462a56ca0e3d29516559ed424'; // This is a public API key
+// TMDB API Service (Vite + Environment Variables)
+const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY as string;
+
+if (!TMDB_API_KEY) {
+  throw new Error(
+    'VITE_TMDB_API_KEY is not defined. Please add it to your .env file.'
+  );
+}
+
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
@@ -55,17 +62,20 @@ export interface MoviesResponse {
   total_results: number;
 }
 
-const fetchFromTMDB = async (endpoint: string, params: Record<string, string> = {}) => {
+const fetchFromTMDB = async (
+  endpoint: string,
+  params: Record<string, string> = {}
+) => {
   const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
   url.searchParams.append('api_key', TMDB_API_KEY);
-  
+
   Object.entries(params).forEach(([key, value]) => {
     url.searchParams.append(key, value);
   });
 
   const response = await fetch(url.toString());
   if (!response.ok) {
-    throw new Error(`TMDB API error: ${response.statusText}`);
+    throw new Error(`TMDB API error: ${response.status} ${response.statusText}`);
   }
   return response.json();
 };
@@ -125,18 +135,21 @@ export const tmdbService = {
     });
   },
 
-  // Get all movies sorted by release date
+  // Get all movies sorted by release date (released only)
   getMoviesByReleaseDate: async (page: number = 1): Promise<MoviesResponse> => {
     return fetchFromTMDB('/discover/movie', {
       page: page.toString(),
       sort_by: 'release_date.desc',
-      'release_date.lte': new Date().toISOString().split('T')[0], // Only released movies
+      'release_date.lte': new Date().toISOString().split('T')[0],
     });
   },
 
   // Image URL helpers
-  getImageUrl: (path: string | null, size: 'w500' | 'w780' | 'original' = 'w500'): string => {
-    if (!path) return '/placeholder.svg';
+  getImageUrl: (
+    path: string | null,
+    size: 'w500' | 'w780' | 'original' = 'w500'
+  ): string => {
+    if (!path) return '/placeholder.jpg';
     return `${TMDB_IMAGE_BASE_URL}/${size}${path}`;
   },
 
